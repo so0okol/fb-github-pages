@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>Eksperyment FBᵤ — bańka filtrująca</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink:#172033; --muted:#657089; --line:#e3e8f0; --paper:#f5f7fb;
+      --card:#fff; --navy:#101827; --blue:#315ee8; --blue-soft:#edf2ff;
+      --green:#16834a; --green-soft:#eaf7ef; --amber:#a65a08; --amber-soft:#fff4e5;
+      --shadow:0 12px 34px rgba(20,35,65,.07);
+    }
+    * { box-sizing:border-box }
+    body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif }
+    header { background:var(--navy); color:white; padding:44px 22px 38px }
+    .wrap { width:min(100% - 32px, 1040px); margin:auto }
+    .eyebrow { color:#a9bbf5; text-transform:uppercase; letter-spacing:.13em; font-size:.75rem; font-weight:750 }
+    h1 { margin:.45rem 0 .6rem; font-size:clamp(2rem,5vw,3.35rem); line-height:1.08; letter-spacing:-.04em }
+    header p { max-width:760px; color:#d4dbea; margin:0; font-size:1.05rem }
+    main { padding:28px 0 56px }
+    .formula { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:20px 22px; background:white; border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); margin-bottom:22px }
+    .formula strong { font-size:1.08rem }
+    .equation { font:700 clamp(1.25rem,3vw,1.8rem)/1.2 Georgia,serif; color:var(--blue); white-space:nowrap }
+    .layout { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(280px,.85fr); gap:22px; align-items:start }
+    .panel { background:var(--card); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); overflow:hidden }
+    .panel-head { padding:20px 22px 15px; border-bottom:1px solid var(--line) }
+    h2 { margin:0; font-size:1.18rem; letter-spacing:-.02em }
+    .sub { margin:5px 0 0; color:var(--muted); font-size:.9rem }
+    .articles { padding:10px 14px 14px; display:grid; gap:9px }
+    .article { width:100%; text-align:left; border:1px solid var(--line); background:white; border-radius:13px; padding:13px 14px; cursor:pointer; color:inherit; transition:border-color .15s,background .15s,transform .15s }
+    .article:hover { border-color:#9aadef; transform:translateY(-1px) }
+    .article:focus-visible,button:focus-visible { outline:3px solid #91a9ff; outline-offset:2px }
+    .article.selected { border-color:#65b486; background:var(--green-soft) }
+    .article-top { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:6px }
+    .tag { color:#52617c; background:#f0f3f8; border-radius:999px; padding:3px 9px; font-size:.72rem; font-weight:700 }
+    .status { color:var(--green); font-size:.75rem; font-weight:750 }
+    .article-title { display:block; font-weight:680; line-height:1.35 }
+    .side { display:grid; gap:16px; position:sticky; top:16px }
+    .stats { padding:18px 20px; display:grid; grid-template-columns:1fr 1fr; gap:10px }
+    .stat { background:#f5f7fb; border-radius:13px; padding:13px }
+    .stat b { display:block; font-size:1.75rem; line-height:1.2; letter-spacing:-.04em; font-variant-numeric:tabular-nums }
+    .stat span { color:var(--muted); font-size:.78rem }
+    .result { padding:20px }
+    .result-label { color:var(--muted); font-size:.73rem; font-weight:800; letter-spacing:.12em }
+    .value { font-size:3rem; font-weight:800; letter-spacing:-.06em; line-height:1.1; margin:7px 0 10px; font-variant-numeric:tabular-nums }
+    .interpret { padding:11px 13px; border-radius:12px; font-weight:650; font-size:.9rem; margin:12px 0 17px }
+    .interpret.good { background:var(--green-soft); color:#11683b }
+    .interpret.warn { background:var(--amber-soft); color:#874707 }
+    .interpret.neutral { background:var(--blue-soft); color:#294db8 }
+    .metrics { display:grid; gap:10px; border-top:1px solid var(--line); padding-top:15px }
+    .metric { display:flex; justify-content:space-between; gap:12px; color:var(--muted); font-size:.9rem }
+    .metric b { color:var(--ink); font-variant-numeric:tabular-nums }
+    .actions { display:flex; gap:9px; padding:0 20px 20px }
+    button.action { border:1px solid var(--line); background:white; color:var(--ink); border-radius:10px; padding:9px 13px; cursor:pointer; font-weight:700 }
+    button.action.primary { background:var(--navy); color:white; border-color:var(--navy) }
+    button.action:hover { filter:brightness(.97) }
+    .note { margin-top:20px; padding:17px 19px; border:1px solid #dce4f4; background:#f0f4fc; border-radius:15px; color:#4d5b73; font-size:.88rem }
+    .note strong { color:#263650 }
+    details { margin-top:14px; border-top:1px solid var(--line); padding-top:13px }
+    summary { cursor:pointer; font-weight:700; font-size:.9rem }
+    .math { font:1rem Georgia,serif; padding:12px 0 4px; color:#31405a }
+    footer { color:var(--muted); text-align:center; padding:0 16px 30px; font-size:.8rem }
+    @media(max-width:780px) { .layout { grid-template-columns:1fr } .side { position:static; grid-row:1 } header { padding-top:34px } }
+    @media(prefers-reduced-motion:reduce) { * { transition:none !important; scroll-behavior:auto !important } }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Interaktywny eksperyment</div>
+    <h1>Czy jesteś w bańce informacyjnej?</h1>
+    <p>Przeczytaj wybrane artykuły i sprawdź, jak różnorodność Twojego czytelnictwa ma się do różnorodności treści pokazanych w rekomendacjach.</p>
+  </div>
+</header>
+<main class="wrap">
+  <section class="formula" aria-label="Definicja metryki">
+    <div><strong>Twoja metryka bańki filtrującej</strong><div class="sub">FBᵤ porównuje różnorodność przeczytanych i wyświetlonych artykułów.</div></div>
+    <div class="equation">FBᵤ = ILD(pageviews) / ILD(impressions)</div>
+  </section>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Twój feed informacyjny</h2>
+        <p class="sub">Kliknij tytuł, aby oznaczyć artykuł jako przeczytany. Kliknij ponownie, aby cofnąć wybór.</p>
+      </div>
+      <div class="articles" id="articles" aria-label="Lista artykułów"></div>
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <div class="panel-head"><h2>Aktywność</h2><p class="sub">Wszystkie pozycje w feedzie są impressions.</p></div>
+        <div class="stats">
+          <div class="stat"><b id="impressionsCount">12</b><span>Impressions</span></div>
+          <div class="stat"><b id="pageviewsCount">0</b><span>Pageviews</span></div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="result" aria-live="polite">
+          <div class="result-label">TWOJE FBᵤ</div>
+          <div class="value" id="fbValue">—</div>
+          <div class="interpret neutral" id="interpret">Wybierz co najmniej dwa artykuły, aby obliczyć wynik.</div>
+          <div class="metrics">
+            <div class="metric"><span>ILD impressions</span><b id="impressionIld">—</b></div>
+            <div class="metric"><span>ILD pageviews</span><b id="pageviewIld">—</b></div>
+            <div class="metric"><span>Przeczytane artykuły</span><b id="readCount">0</b></div>
+          </div>
+          <details>
+            <summary>Jak obliczamy wynik?</summary>
+            <div class="math">ILD(L) = 2 / (n(n−1)) · Σ<sub>i&lt;j</sub> (1 − cos(e<sub>i</sub>, e<sub>j</sub>))</div>
+            <p class="sub">ILD to średnia odległość kosinusowa pomiędzy embeddingami wszystkich par artykułów w danej liście. Wyższa wartość oznacza większą różnorodność semantyczną.</p>
+          </details>
+        </div>
+        <div class="actions">
+          <button class="action primary" id="resetBtn" type="button">Resetuj wybór</button>
+          <button class="action" id="allBtn" type="button">Wybierz wszystkie</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="note">
+    <strong>Uwaga metodologiczna:</strong> to demonstracja mechanizmu, a nie rzeczywisty pomiar na podstawie modelu embeddingowego. Wektory artykułów są przykładowymi, ręcznie przygotowanymi reprezentacjami semantycznymi. W artykule wykorzystano embeddingi OpenAI <code>text-embedding-3-large</code>. Tutaj zachowano definicję ILD i FBᵤ, ale nie odtwarzamy tych embeddingów ani danych produkcyjnych. Lista 12 artykułów stanowi zbiór impressions, a wybrane tytuły — pageviews.
+  </section>
+</main>
+<footer>Interaktywny demonstrator metryki FBᵤ · na podstawie sekcji III-A artykułu IEEE Access</footer>
+
+<script>
+  // Przykładowe wektory semantyczne; nie są embeddingami z modelu produkcyjnego.
+  const articles = [
+    {id:1,cat:"Polityka",title:"Nowy projekt reformy systemu podatkowego – co zmieni się dla Polaków?",v:[1,.1,.1,.1,0,.1]},
+    {id:2,cat:"Polityka",title:"Unia Europejska zapowiada nowe regulacje dotyczące rynku cyfrowego",v:[.9,.2,.2,.1,0,.1]},
+    {id:3,cat:"Gospodarka",title:"Inflacja w Polsce: najnowsze dane i prognozy ekonomistów",v:[.1,1,.1,.1,0,.1]},
+    {id:4,cat:"Gospodarka",title:"Rynek nieruchomości w 2026 roku – czy ceny mieszkań spadną?",v:[.1,.9,.2,.1,.1,0]},
+    {id:5,cat:"Technologia",title:"Sztuczna inteligencja zmienia rynek pracy. Które zawody są zagrożone?",v:[.1,.1,1,.2,.1,.1]},
+    {id:6,cat:"Technologia",title:"Nowy model AI osiąga przełomowe wyniki w analizie danych",v:[.1,.1,.9,.2,.1,.1]},
+    {id:7,cat:"Zdrowie",title:"Jak sen wpływa na pamięć i funkcjonowanie mózgu?",v:[.1,.1,.1,1,.2,.1]},
+    {id:8,cat:"Zdrowie",title:"Naukowcy odkrywają nowe możliwości leczenia chorób serca",v:[.1,.1,.1,.9,.2,.1]},
+    {id:9,cat:"Kultura",title:"Najważniejsze premiery filmowe tego sezonu – co warto zobaczyć?",v:[.1,.1,.1,.1,1,.2]},
+    {id:10,cat:"Sport",title:"Sensacyjny finał turnieju. Znamy zwycięzcę tegorocznych rozgrywek",v:[.1,.1,.1,.1,.2,1]},
+    {id:11,cat:"Klimat",title:"Zmiany klimatyczne przyspieszają. Nowy raport naukowców",v:[.2,.1,.1,.2,.1,.9]},
+    {id:12,cat:"Gospodarka",title:"Polskie firmy inwestują w odnawialne źródła energii",v:[.2,.8,.1,.1,.1,.5]}
+  ];
+  const selected = new Set();
+  const dot = (a,b) => a.reduce((s,x,i)=>s+x*b[i],0);
+  const norm = a => Math.sqrt(dot(a,a));
+  function ild(list) {
+    if (list.length < 2) return null;
+    let sum = 0, pairs = 0;
+    for (let i=0;i<list.length;i++) for (let j=i+1;j<list.length;j++) {
+      const cosine = dot(list[i].v,list[j].v)/(norm(list[i].v)*norm(list[j].v));
+      sum += 1-cosine; pairs++;
+    }
+    return sum/pairs;
+  }
+  const fmt = n => n.toFixed(4);
+  function renderArticles() {
+    const root = document.getElementById("articles");
+    root.innerHTML = "";
+    articles.forEach(a => {
+      const isSelected = selected.has(a.id);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "article" + (isSelected ? " selected" : "");
+      button.setAttribute("aria-pressed", String(isSelected));
+      button.innerHTML = `<span class="article-top"><span class="tag"></span><span class="status"></span></span><span class="article-title"></span>`;
+      button.querySelector(".tag").textContent = a.cat;
+      button.querySelector(".status").textContent = isSelected ? "✓ Przeczytany" : "Kliknij, aby przeczytać";
+      button.querySelector(".article-title").textContent = a.title;
+      button.addEventListener("click", () => {
+        selected.has(a.id) ? selected.delete(a.id) : selected.add(a.id);
+        renderArticles(); renderResult();
+      });
+      root.appendChild(button);
+    });
+  }
+  function renderResult() {
+    const impressions = articles;
+    const pageviews = articles.filter(a => selected.has(a.id));
+    const i = ild(impressions), p = ild(pageviews);
+    document.getElementById("impressionsCount").textContent = impressions.length;
+    document.getElementById("pageviewsCount").textContent = pageviews.length;
+    document.getElementById("readCount").textContent = pageviews.length;
+    document.getElementById("impressionIld").textContent = fmt(i);
+    document.getElementById("pageviewIld").textContent = p === null ? "—" : fmt(p);
+    const value = document.getElementById("fbValue");
+    const interpretation = document.getElementById("interpret");
+    if (p === null) {
+      value.textContent = "—";
+      interpretation.className = "interpret neutral";
+      interpretation.textContent = "Wybierz co najmniej dwa artykuły, aby obliczyć wynik. ILD dla listy krótszej niż dwa artykuły jest niezdefiniowane.";
+      return;
+    }
+    const fb = p/i;
+    value.textContent = fmt(fb);
+    if (fb > 1) {
+      interpretation.className = "interpret warn";
+      interpretation.textContent = "FBᵤ > 1: wyświetlone rekomendacje są mniej różnorodne niż artykuły, które czytasz — narrowing.";
+    } else if (fb < 1) {
+      interpretation.className = "interpret good";
+      interpretation.textContent = "FBᵤ < 1: rekomendacje są bardziej różnorodne niż Twoje zaobserwowane czytelnictwo — over-diversification.";
+    } else {
+      interpretation.className = "interpret good";
+      interpretation.textContent = "FBᵤ = 1: różnorodność rekomendacji i czytelnictwa jest taka sama — parity.";
+    }
+  }
+  document.getElementById("resetBtn").addEventListener("click", () => { selected.clear(); renderArticles(); renderResult(); });
+  document.getElementById("allBtn").addEventListener("click", () => { articles.forEach(a=>selected.add(a.id)); renderArticles(); renderResult(); });
+  renderArticles(); renderResult();
+</script>
+</body>
+</html>
